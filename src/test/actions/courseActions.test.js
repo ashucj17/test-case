@@ -1,73 +1,72 @@
 import configureMockStore from 'redux-mock-store';
 import thunk from 'redux-thunk';
-import fetchMock from 'fetch-mock';
-import * as actions from '../../actions/courseActions';
-import * as types from '../../actions/types';
+import fetchMock from 'jest-fetch-mock';
+import {
+  fetchCourses,
+  setSelectedCourse,
+  clearSelectedCourse
+} from '../../actions/courseActions';
+import {
+  FETCH_COURSES,
+  FETCH_COURSES_SUCCESS,
+  FETCH_COURSES_FAILURE,
+  SET_SELECTED_COURSE,
+  CLEAR_SELECTED_COURSE
+} from '../../actions/types';
 
 const middlewares = [thunk];
 const mockStore = configureMockStore(middlewares);
 
-describe('Course Actions', () => {
-  afterEach(() => {
-    fetchMock.restore();
+describe('course actions', () => {
+  beforeEach(() => {
+    fetchMock.resetMocks();
   });
 
-  it('creates FETCH_COURSES_SUCCESS when fetching courses is successful', () => {
+  it('creates FETCH_COURSES_SUCCESS when fetching courses has been done', async () => {
     const courses = [
-      { id: 1, title: 'Test Course 1' },
-      { id: 2, title: 'Test Course 2' }
+      { id: 1, title: 'React Course' },
+      { id: 2, title: 'Node.js Course' }
     ];
-
-    fetchMock.getOnce('http://localhost:3001/courses', {
-      body: courses,
-      headers: { 'content-type': 'application/json' }
-    });
+    
+    fetchMock.mockResponseOnce(JSON.stringify(courses));
 
     const expectedActions = [
-      { type: types.FETCH_COURSES },
-      { type: types.FETCH_COURSES_SUCCESS, payload: courses }
+      { type: FETCH_COURSES },
+      { type: FETCH_COURSES_SUCCESS, payload: courses }
     ];
-
+    
     const store = mockStore({ courses: [] });
 
-    return store.dispatch(actions.fetchCourses()).then(() => {
-      expect(store.getActions()).toEqual(expectedActions);
-    });
+    await store.dispatch(fetchCourses());
+    expect(store.getActions()).toEqual(expectedActions);
   });
 
-  it('creates FETCH_COURSES_FAILURE when fetching courses fails', () => {
-    fetchMock.getOnce('http://localhost:3001/courses', {
-      status: 404,
-      throws: new Error('Failed to fetch courses')
-    });
+  it('creates FETCH_COURSES_FAILURE when fetching courses fails', async () => {
+    fetchMock.mockReject(new Error('Network error'));
 
     const expectedActions = [
-      { type: types.FETCH_COURSES },
-      { type: types.FETCH_COURSES_FAILURE, payload: 'Failed to fetch courses' }
+      { type: FETCH_COURSES },
+      { type: FETCH_COURSES_FAILURE, payload: 'Network error' }
     ];
-
+    
     const store = mockStore({ courses: [] });
 
-    return store.dispatch(actions.fetchCourses()).then(() => {
-      expect(store.getActions()).toEqual(expectedActions);
-    });
+    await store.dispatch(fetchCourses());
+    expect(store.getActions()).toEqual(expectedActions);
   });
 
   it('creates SET_SELECTED_COURSE action', () => {
-    const course = { id: 1, title: 'Test Course' };
+    const course = { id: 1, title: 'React Course' };
     const expectedAction = {
-      type: types.SET_SELECTED_COURSE,
+      type: SET_SELECTED_COURSE,
       payload: course
     };
-
-    expect(actions.setSelectedCourse(course)).toEqual(expectedAction);
+    
+    expect(setSelectedCourse(course)).toEqual(expectedAction);
   });
 
   it('creates CLEAR_SELECTED_COURSE action', () => {
-    const expectedAction = {
-      type: types.CLEAR_SELECTED_COURSE
-    };
-
-    expect(actions.clearSelectedCourse()).toEqual(expectedAction);
+    const expectedAction = { type: CLEAR_SELECTED_COURSE };
+    expect(clearSelectedCourse()).toEqual(expectedAction);
   });
 });
